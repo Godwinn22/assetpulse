@@ -1,47 +1,57 @@
-import { useEffect, useState } from "react"
-import { supabase } from "../lib/supabase"
-import { AuthContext } from "./auth-context"
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
+import { AuthContext } from "./auth-context";
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+    const [user, setUser] = useState(null);
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const getSession = async () => {
-      const { data } = await supabase.auth.getSession()
-      setUser(data.session?.user ?? null)
-      setLoading(false)
-    }
+    useEffect(() => {
+        const getSession = async () => {
+            const { data } = await supabase.auth.getSession();
+            const sessionUser = data.session?.user ?? null;
+            setUser(sessionUser);
+			// If there's a session, fetch the user's profile
+            if (sessionUser) {
+                const { data: profileData } = await supabase
+                    .from("profiles")
+                    .select("*")
+                    .eq("id", sessionUser.id)
+                    .single();
 
-    getSession()
+                setProfile(profileData);
+            }
+            setLoading(false);
+        };
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null)
-      }
-    )
+        getSession();
 
-    return () => {
-      listener.subscription.unsubscribe()
-    }
-  }, [])
+        const { data: listener } = supabase.auth.onAuthStateChange(
+            (_event, session) => {
+                setUser(session?.user ?? null);
+            },
+        );
 
-  const login = async (email, password) => {
-    return await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-  }
+        return () => {
+            listener.subscription.unsubscribe();
+        };
+    }, []);
 
-  const logout = async () => {
-    await supabase.auth.signOut()
-  }
+    const login = async (email, password) => {
+        return await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+    };
 
-  return (
-    <AuthContext.Provider
-      value={{ user, loading, login, logout }}
-    >
-      {children}
-    </AuthContext.Provider>
-  )
-}
+    const logout = async () => {
+        await supabase.auth.signOut();
+    };
+
+    return (
+        <AuthContext.Provider value={{ user,profile, loading, login, logout }}>
+            {children}
+        </AuthContext.Provider>
+    );
+};
