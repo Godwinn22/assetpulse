@@ -4,7 +4,7 @@ import { AuthContext } from "../context/auth-context";
 import "./Dashboard.css";
 
 const Dashboard = () => {
-    const { user, logout } = useContext(AuthContext);
+    const { user, profile, logout } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -26,6 +26,7 @@ const Dashboard = () => {
                     <p>
                         <strong>Logged in as:</strong> {user?.email}
                     </p>
+					<p><strong>Role:</strong> {profile?.role}</p>
                 </div>
             </div>
         </div>
