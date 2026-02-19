@@ -1,0 +1,49 @@
+.dashboard-container {
+  min-height: 100vh;
+  background: #f1f5f9;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* Top Bar */
+.dashboard-header {
+  background: #0f172a;
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Content Area */
+.dashboard-content {
+  padding: 2rem;
+}
+
+/* Card */
+.dashboard-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+}
+
+/* Logout Button */
+.logout-button {
+  padding: 0.6rem 1rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.logout-button:hover {
+  background: #b91c1c;
+}
