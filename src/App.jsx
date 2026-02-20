@@ -1,8 +1,9 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
+import DashBoard from "./pages/DashBoard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import AdminDevices from "./pages/AdminDevices";
 
 import "./App.css";
 
@@ -15,15 +16,15 @@ function App() {
                 path="/dashboard"
                 element={
                     <ProtectedRoute>
-                        <Dashboard />
+                        <DashBoard />
                     </ProtectedRoute>
                 }
             />
             <Route
-                path="/admin"
+                path="/admin/devices"
                 element={
                     <AdminRoute>
-                        <div>Admin Panel</div>
+                        <AdminDevices />
                     </AdminRoute>
                 }
             />

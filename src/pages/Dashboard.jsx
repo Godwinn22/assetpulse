@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/auth-context";
 import "./Dashboard.css";
 
-const Dashboard = () => {
+const DashBoard = () => {
     const { user, profile, logout } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -33,4 +33,4 @@ const Dashboard = () => {
     );
 };
 
-export default Dashboard;
+export default DashBoard;
