@@ -1,5 +1,6 @@
 import React from "react";
 import { useState } from "react";
+import { supabase } from "../lib/supabase";
 
 const AdminDevices = () => {
     const [name, setName] = useState("");
@@ -7,13 +8,37 @@ const AdminDevices = () => {
     const [category, setCategory] = useState("");
     const [condition, setCondition] = useState("");
     const [value, setValue] = useState("");
+	// Handler for submitting the form to add a new device
+	const handleSubmit = async (e) => {
+		e.preventDefault() // Prevent the default form submission behavior
+		const { error } = await supabase.from("devices").insert([
+			// This code is inserting a new record into the
+			// "devices" table in the Supabase database.
+			{
+				name,
+				serial_number: serial,
+				category,
+				condition,
+				estimated_value: Number(value) // Ensure value is stored as a number
+			}
+		])
+		if (error) {
+			alert(`Error adding device: ${error.message}`);
+		} else {
+			alert("Device added successfully!")
+			setName("")
+			setSerial("")
+			setCategory("")
+			setCondition("")
+			setValue("")
+		}
+	}
     return (
         <div>
             <h2>Device Management</h2>
-            <form action="">
-				{/* In a real application, this form would submit to
-				the backend to create a new device.
-				For this demo, we're just managing local state. */}
+            <form action="" onSubmit={handleSubmit}>
+				{/* This form would submit to
+				the backend to create a new device.*/}
                 <input
                     type="text"
                     placeholder="Device name"
@@ -49,7 +74,7 @@ const AdminDevices = () => {
                     onChange={(e) => setValue(e.target.value)}
                     required
                 />
-				<button type="submit">Add Device</button>
+				<button type="submit" >Add Device</button>
             </form>
         </div>
     );
