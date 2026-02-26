@@ -7,11 +7,11 @@ import { useAuth } from "../hooks/AuthContext";
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-	const navigate = useNavigate();
+    const navigate = useNavigate();
 
     // we can use the profile to redirect the user to the correct dashboard after login
-	const { profile } = useAuth();
-	
+    const { profile } = useAuth();
+
     // we can also use the profile to show different content on the login page if needed
     useEffect(() => {
         if (profile?.role === "admin") {
@@ -29,7 +29,8 @@ export default function Login() {
         });
 
         if (error) {
-            toast.error("Login failed");
+            console.log("LOGIN ERROR:", error);
+            toast.error(error.message);
             return;
         }
 
