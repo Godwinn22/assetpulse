@@ -1,10 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
+import { useAuth } from "../hooks/AuthContext";
 
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+	const navigate = useNavigate();
+
+    // we can use the profile to redirect the user to the correct dashboard after login
+	const { profile } = useAuth();
+	
+    // we can also use the profile to show different content on the login page if needed
+    useEffect(() => {
+        if (profile?.role === "admin") {
+            navigate("/admin");
+        }
+        if (profile?.role === "staff") {
+            navigate("/staff");
+        }
+    }, [profile, navigate]);
 
     const handleLogin = async () => {
         const { data, error } = await supabase.auth.signInWithPassword({
