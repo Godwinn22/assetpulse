@@ -1,4 +1,4 @@
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../hooks/AuthContext";
 
 export default function AdminDashboard() {
     const { profile, logout } = useAuth();
