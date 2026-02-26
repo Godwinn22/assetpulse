@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const navigate = useNavigate();
 
     const handleLogin = async () => {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -21,7 +19,6 @@ export default function Login() {
 
         if (data?.user) {
             toast.success("Login successful");
-            navigate("/dashboard");
         }
     };
 
