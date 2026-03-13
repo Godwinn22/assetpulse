@@ -1,6 +1,6 @@
 // src/components/AppRoutes.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 import Login from "../pages/Login";
 import AdminDashboard from "../pages/admin/Dashboard";
 import StaffDashboard from "../pages/staff/Dashboard";
