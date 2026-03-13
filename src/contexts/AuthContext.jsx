@@ -2,48 +2,57 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-// 1. Create the context — think of this as a "global store" for auth info
 const AuthContext = createContext({});
-
-// 2. Custom hook — any component can call useAuth() to get user info
 export const useAuth = () => useContext(AuthContext);
 
-// 3. The Provider — wraps your whole app and shares auth state with everyone
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null); // the raw Supabase auth user
-    const [profile, setProfile] = useState(null); // our profiles table row (has role, name, etc.)
-    const [loading, setLoading] = useState(true); // true while we check if someone is logged in
+    const [user, setUser] = useState(null);
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // When the app first loads, check if there's already a logged-in session
+        // ⏱ SAFETY NET: If loading takes more than 5 seconds, something is wrong.
+        // We automatically sign the user out and reset — no DevTools needed.
+        const timeout = setTimeout(async () => {
+            console.warn("Loading timeout — clearing session automatically.");
+            await supabase.auth.signOut();
+            setUser(null);
+            setProfile(null);
+            setLoading(false);
+        }, 5000);
+
+        // Check if there's an existing session when the app first loads
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null);
             if (session?.user) {
-                fetchProfile(session.user.id);
+                fetchProfile(session.user.id, timeout);
             } else {
+                clearTimeout(timeout); // session check done, cancel the timeout
                 setLoading(false);
             }
         });
 
-        // This listener fires every time login or logout happens
+        // Listen for login/logout events
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setUser(session?.user ?? null);
             if (session?.user) {
-                await fetchProfile(session.user.id);
+                await fetchProfile(session.user.id, timeout);
             } else {
                 setProfile(null);
+                clearTimeout(timeout);
                 setLoading(false);
             }
         });
 
-        // Cleanup: stop listening when the component is removed
-        return () => subscription.unsubscribe();
+        return () => {
+            clearTimeout(timeout); // always clean up the timer when component unmounts
+            subscription.unsubscribe();
+        };
     }, []);
 
-    // Fetches the user's row from our profiles table (contains role, name, dept)
-    const fetchProfile = async (userId) => {
+    const fetchProfile = async (userId, timeout) => {
         try {
             const { data, error } = await supabase
                 .from("profiles")
@@ -55,13 +64,16 @@ export function AuthProvider({ children }) {
             setProfile(data);
         } catch (err) {
             console.error("Could not load profile:", err.message);
+            // If profile fetch fails, sign out cleanly instead of staying stuck
+            await supabase.auth.signOut();
+            setUser(null);
             setProfile(null);
         } finally {
+            clearTimeout(timeout); // profile loaded (or failed), cancel the timeout
             setLoading(false);
         }
     };
 
-    // Login function — called from the Login page
     const login = async (email, password) => {
         const { error } = await supabase.auth.signInWithPassword({
             email,
@@ -70,12 +82,10 @@ export function AuthProvider({ children }) {
         if (error) throw error;
     };
 
-    // Logout function — called from dashboards
     const logout = async () => {
         await supabase.auth.signOut();
     };
 
-    // Everything inside `value` is available to any component that calls useAuth()
     return (
         <AuthContext.Provider value={{ user, profile, loading, login, logout }}>
             {children}
