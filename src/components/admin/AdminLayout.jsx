@@ -60,7 +60,7 @@ export default function AdminLayout({ children }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="h-screen bg-gray-50 flex overflow-hidden">
             {/* ── Mobile overlay (dark backdrop when sidebar is open on small screens) ── */}
             {sidebarOpen && (
                 <div
@@ -143,7 +143,7 @@ export default function AdminLayout({ children }) {
             </aside>
 
             {/* ── MAIN CONTENT AREA ── */}
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
                 {/* Mobile top bar (only visible on small screens) */}
                 <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-10 shadow-sm">
                     <button
@@ -163,7 +163,7 @@ export default function AdminLayout({ children }) {
                 </header>
 
                 {/* The actual page content goes here */}
-                <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+                <main className="flex-1 p-6 lg:p-8 overflow-y-auto h-full">
                     {children}
                 </main>
             </div>
