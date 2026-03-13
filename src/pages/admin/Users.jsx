@@ -82,15 +82,10 @@ function CreateStaffModal({ onClose, onCreated }) {
         setLoading(true);
         setError("");
 
-        // We track this so we can log it if profile insert fails
         let createdUserId = null;
 
         try {
-            // ── IMPROVEMENT 1: Check if email already exists ──
-            // WHY: If we skip this and call signUp() with an existing
-            // email, Supabase returns a fake success (no error) but
-            // sends a confirmation email instead. We'd never know it failed.
-            // Checking profiles first gives us a clear, friendly error.
+            // Check duplicate email first
             const { data: existing } = await supabase
                 .from("profiles")
                 .select("id")
@@ -103,11 +98,21 @@ function CreateStaffModal({ onClose, onCreated }) {
                 );
             }
 
-            // ── STEP 1: Create auth user via TEMP client ──
-            // WHY temp client: signUp() automatically signs in the new user.
-            // A separate client instance has its own isolated session storage.
-            // The admin's session on the main supabase client is never touched.
-            const tempClient = createClient(supabaseUrl, supabaseAnonKey);
+            // Step 1: Create auth user via temp client with memory-only storage
+            // Memory-only storage prevents admin logout (our earlier fix)
+            const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
+                auth: {
+                    persistSession: false,
+                    autoRefreshToken: false,
+                    detectSessionInUrl: false,
+                    storage: {
+                        getItem: () => null,
+                        setItem: () => {},
+                        removeItem: () => {},
+                    },
+                },
+            });
+
             const { data: authData, error: authError } =
                 await tempClient.auth.signUp({
                     email: form.email,
@@ -118,14 +123,9 @@ function CreateStaffModal({ onClose, onCreated }) {
             if (!authData.user)
                 throw new Error("Account creation failed. Please try again.");
 
-            // Save UUID before step 2 — needed for orphan logging if step 2 fails
             createdUserId = authData.user.id;
 
-            // ── STEP 2: Insert profile row via MAIN client ──
-            // WHY main client: The admin's RLS policy allows profile inserts.
-            // The new user's session (on tempClient) only has the
-            // "own profile creation" policy which we added in SQL.
-            // Using main client here is more reliable.
+            // Step 2: Insert profile using the real UUID from auth
             const { error: profileError } = await supabase
                 .from("profiles")
                 .insert({
@@ -138,25 +138,18 @@ function CreateStaffModal({ onClose, onCreated }) {
 
             if (profileError) throw profileError;
 
-            // Both steps succeeded
             onCreated();
         } catch (err) {
-            // ── IMPROVEMENT 2: Log orphan users ──
-            // If auth was created (createdUserId is set) but we're in the
-            // catch block, it means profile insert failed after auth succeeded.
-            // We can't delete the auth user from frontend (needs service role key)
-            // so we log it clearly so it can be manually removed from
-            // Supabase Dashboard → Authentication → Users
+            // Log orphan if auth succeeded but profile failed
             if (createdUserId) {
                 console.error(
                     `⚠️ ORPHAN USER DETECTED\n` +
                         `UUID: ${createdUserId}\n` +
                         `Email: ${form.email}\n` +
-                        `Action: Remove this user from Supabase Auth dashboard manually.`,
+                        `Action: Remove manually from Supabase Auth dashboard.`,
                 );
             }
 
-            // Show friendly error messages instead of raw Supabase errors
             if (err.message.includes("already exists")) {
                 setError("A staff member with this email already exists.");
             } else if (err.message.includes("password")) {
