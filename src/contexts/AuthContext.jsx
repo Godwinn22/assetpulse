@@ -10,10 +10,10 @@ export function AuthProvider({ children }) {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // useRef lets us track a value without causing re-renders
-    // We use this to prevent the auth listener from running during timeout cleanup
-    const isTimingOut = useRef(false);
-    const timeoutRef = useRef(null);
+    // This flag tells the auth listener to stay quiet during the initial load
+    // Without this, getSession() and onAuthStateChange both fire on reload
+    // and race each other — causing the infinite loading bug
+    const initialized = useRef(false);
 
     const fetchProfile = async (userId) => {
         try {
@@ -24,80 +24,29 @@ export function AuthProvider({ children }) {
                 .single();
 
             if (error) throw error;
-
             setProfile(data);
         } catch (err) {
             console.error("Could not load profile:", err.message);
             setProfile(null);
-            // Sign out silently if profile can't be loaded
             await supabase.auth.signOut();
             setUser(null);
         } finally {
-            // Clear the safety timeout since we finished successfully (or with error)
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-                timeoutRef.current = null;
-            }
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        let mounted = true; // prevents state updates if component unmounts
-
-        const initialize = async () => {
-            try {
-                // ⏱ Safety timeout — if ANYTHING takes over 6 seconds, reset cleanly
-                timeoutRef.current = setTimeout(async () => {
-                    if (!mounted) return;
-                    isTimingOut.current = true; // flag so auth listener ignores this signout
-                    console.warn("Timeout — resetting session.");
-                    await supabase.auth.signOut();
-                    if (mounted) {
-                        setUser(null);
-                        setProfile(null);
-                        setLoading(false); // ← this was the bug, loading wasn't set to false
-                    }
-                    isTimingOut.current = false;
-                }, 6000);
-
-                // Check for existing session on app load
-                const {
-                    data: { session },
-                } = await supabase.auth.getSession();
-
-                if (!mounted) return;
-
-                if (session?.user) {
-                    setUser(session.user);
-                    await fetchProfile(session.user.id);
-                } else {
-                    clearTimeout(timeoutRef.current);
-                    setLoading(false);
-                }
-            } catch (err) {
-                console.error("Init error:", err.message);
-                if (mounted) {
-                    clearTimeout(timeoutRef.current);
-                    setUser(null);
-                    setProfile(null);
-                    setLoading(false);
-                }
-            }
-        };
-
-        initialize();
-
-        // Listen for login/logout events AFTER initial load
+        // STEP 1: Set up the auth listener FIRST
+        // But it does nothing until initialized.current = true (set after getSession)
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            // Ignore events triggered by our own timeout cleanup
-            if (isTimingOut.current || !mounted) return;
+            // Ignore all events during initial load — getSession() handles that
+            if (!initialized.current) return;
 
             if (session?.user) {
                 setUser(session.user);
-                setLoading(true); // show spinner while fetching profile
+                setLoading(true);
                 await fetchProfile(session.user.id);
             } else {
                 setUser(null);
@@ -106,11 +55,36 @@ export function AuthProvider({ children }) {
             }
         });
 
-        return () => {
-            mounted = false;
-            clearTimeout(timeoutRef.current);
-            subscription.unsubscribe();
+        // STEP 2: Check for existing session on page load/reload
+        const initSession = async () => {
+            try {
+                const {
+                    data: { session },
+                    error,
+                } = await supabase.auth.getSession();
+
+                if (error) throw error;
+
+                if (session?.user) {
+                    setUser(session.user);
+                    await fetchProfile(session.user.id);
+                } else {
+                    setLoading(false);
+                }
+            } catch (err) {
+                console.error("Session init error:", err.message);
+                setUser(null);
+                setProfile(null);
+                setLoading(false);
+            } finally {
+                // Only NOW allow the auth listener to respond to future events
+                initialized.current = true;
+            }
         };
+
+        initSession();
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const login = async (email, password) => {
