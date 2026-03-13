@@ -9,10 +9,10 @@ import LoadingScreen from "./LoadingScreen";
 export default function AppRoutes() {
     const { user, profile, loading } = useAuth();
 
-    // Still checking session — show spinner
+    // Always show spinner while auth is being checked
     if (loading) return <LoadingScreen />;
 
-    // Not logged in — only show the login page
+    // Not logged in — show login page only
     if (!user) {
         return (
             <Routes>
@@ -22,24 +22,35 @@ export default function AppRoutes() {
         );
     }
 
-    // Logged in but profile hasn't loaded or has an issue
+    // User is logged in but profile is missing — only show AFTER loading is done
+    // This prevents the flash since we now only reach here when loading = false
     if (!profile) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="bg-white p-8 rounded-xl shadow text-center max-w-sm">
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-red-600 text-xl">⚠️</span>
+                    </div>
                     <p className="text-red-600 font-semibold mb-2">
                         Profile Not Found
                     </p>
-                    <p className="text-gray-500 text-sm">
-                        Your account exists but has no profile. Please contact
-                        your IT administrator.
+                    <p className="text-gray-500 text-sm mb-4">
+                        Your account exists but has no profile assigned. Please
+                        contact your IT administrator.
                     </p>
+                    {/* Give user a way out without needing DevTools */}
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="text-sm text-blue-600 hover:underline"
+                    >
+                        Try again
+                    </button>
                 </div>
             </div>
         );
     }
 
-    // Admin — goes to admin dashboard
+    // Route based on role
     if (profile.role === "admin") {
         return (
             <Routes>
@@ -49,7 +60,6 @@ export default function AppRoutes() {
         );
     }
 
-    // Staff — goes to staff dashboard
     return (
         <Routes>
             <Route path="/staff/*" element={<StaffDashboard />} />
