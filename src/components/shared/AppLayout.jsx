@@ -55,7 +55,7 @@ function NavItem({ to, label, icon, end }) {
     );
 }
 
-export default function AdminLayout({ children }) {
+export default function AppLayout({ children }) {
     const { profile, logout } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
 

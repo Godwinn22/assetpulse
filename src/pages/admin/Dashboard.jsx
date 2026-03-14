@@ -3,7 +3,7 @@
 // based on the URL path (/admin, /admin/devices, etc.)
 
 import { Routes, Route } from "react-router-dom";
-import AdminLayout from "../../components/admin/AdminLayout";
+import AppLayout from "../../components/shared/AppLayout";
 import Overview from "./Overview";
 import Devices from "./Devices";
 import AssignmentHistory from "./AssignmentHistory";
@@ -11,7 +11,7 @@ import Users from "./Users";
 
 export default function AdminDashboard() {
     return (
-        <AdminLayout>
+        <AppLayout>
             <Routes>
                 {/* /admin → Overview */}
                 <Route index element={<Overview />} />
@@ -22,6 +22,6 @@ export default function AdminDashboard() {
                 {/* /admin/users → Users */}
                 <Route path="users" element={<Users />} />
             </Routes>
-        </AdminLayout>
+        </AppLayout>
     );
 }
