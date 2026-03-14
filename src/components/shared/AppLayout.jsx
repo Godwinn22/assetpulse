@@ -5,13 +5,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth";
-import {
-    Monitor,
-    LogOut,
-    Menu,
-    X,
-    ChevronRight,
-} from "lucide-react";
+import { Monitor, LogOut, Menu, X, ChevronRight } from "lucide-react";
 
 // Add this small component ABOVE the AdminLayout function
 function NavItem({ to, label, icon, end }) {
@@ -107,8 +101,15 @@ export default function AppLayout({ children, navItems }) {
                             {profile?.email}
                         </p>
                         <div className="flex items-center gap-1.5 mt-2">
-                            <span className="bg-blue-600/20 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
-                                Admin
+                            <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide
+  ${
+      profile?.role === "admin"
+          ? "bg-blue-600/20 text-blue-400"
+          : "bg-emerald-600/20 text-emerald-400"
+  }`}
+                            >
+                                {profile?.role}
                             </span>
                             <span className="text-slate-500 text-[10px]">
                                 ·
