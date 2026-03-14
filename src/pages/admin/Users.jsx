@@ -1,6 +1,7 @@
 // src/pages/admin/Users.jsx
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import DepartmentPicker from "../../components/shared/DepartmentPicker";
 import { supabase } from "../../lib/supabase";
 import {
     Users,
@@ -67,7 +68,7 @@ function CreateStaffModal({ onClose, onCreated }) {
         full_name: "",
         email: "",
         password: "",
-        department: "",
+        department_id: "",
         role: "staff",
     });
     const [loading, setLoading] = useState(false);
@@ -133,7 +134,7 @@ function CreateStaffModal({ onClose, onCreated }) {
                     full_name: form.full_name,
                     email: form.email,
                     role: form.role,
-                    department: form.department || null,
+                    department_id: form.department_id || null,
                 });
 
             if (profileError) throw profileError;
@@ -219,11 +220,9 @@ function CreateStaffModal({ onClose, onCreated }) {
                         placeholder="Minimum 6 characters"
                     />
 
-                    <FormInput
-                        label="Department"
-                        value={form.department}
-                        onChange={set("department")}
-                        placeholder="e.g. Accounts, Operations, HR"
+                    <DepartmentPicker
+                        value={form.department_id}
+                        onChange={set("department_id")}
                     />
 
                     {/* Role selector */}
@@ -289,7 +288,7 @@ function CreateStaffModal({ onClose, onCreated }) {
 function EditStaffModal({ staff, onClose, onUpdated }) {
     const [form, setForm] = useState({
         full_name: staff.full_name || "",
-        department: staff.department || "",
+        department_id: staff.department_id || "",
         role: staff.role || "staff",
     });
     const [loading, setLoading] = useState(false);
@@ -307,7 +306,7 @@ function EditStaffModal({ staff, onClose, onUpdated }) {
                 .from("profiles")
                 .update({
                     full_name: form.full_name,
-                    department: form.department || null,
+                    department_id: form.department_id || null,
                     role: form.role,
                 })
                 .eq("id", staff.id);
@@ -357,11 +356,9 @@ function EditStaffModal({ staff, onClose, onUpdated }) {
                         placeholder="Full name"
                     />
 
-                    <FormInput
-                        label="Department"
-                        value={form.department}
-                        onChange={set("department")}
-                        placeholder="e.g. Accounts, Operations"
+                    <DepartmentPicker
+                        value={form.department_id}
+                        onChange={set("department_id")}
                     />
 
                     <div>
@@ -572,7 +569,8 @@ export default function UsersPage() {
                 .from("profiles")
                 .select(
                     `
-          id, full_name, email, role, department, created_at,
+          id, full_name, email, role, department_id, created_at,
+		  department:departments(id, name),
           assigned_devices:devices(count)
         `,
                 )
@@ -716,7 +714,7 @@ export default function UsersPage() {
 
                                         {/* Department */}
                                         <td className="px-6 py-4 text-gray-600">
-                                            {member.department || (
+                                            {member.department?.name || (
                                                 <span className="text-gray-300">
                                                     —
                                                 </span>
