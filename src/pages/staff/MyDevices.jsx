@@ -56,13 +56,12 @@ export default function MyDevices() {
     }, [profile]);
 
     // Format Currency
-    const fmt = (n) => {
+    const fmt = (n) =>
         "₦" +
-            Number(n).toLocaleString("en-NG", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-            });
-    };
+        Number(n).toLocaleString("en-NG", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
     // Format date
     const fmtDate = (d) =>
         new Date(d).toLocaleDateString("en-GB", {
