@@ -1,39 +1,28 @@
-import { PieChart, Pie, Tooltip, Legend, ResponsiveContainer } from "recharts";
+// src/components/charts/DeviceTypeChart.jsx
+import { Bar } from "react-chartjs-2";
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Tooltip,
+    Legend,
+} from "chart.js";
+
+// Register required Chart.js components for bar chart
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const COLORS = [
-    "#3b82f6", // blue
-    "#8b5cf6", // purple
-    "#10b981", // green
-    "#f59e0b", // amber
-    "#ef4444", // red
-    "#06b6d4", // cyan
-    "#f97316", // orange
+    "#3b82f6",
+    "#8b5cf6",
+    "#10b981",
+    "#f59e0b",
+    "#ef4444",
+    "#06b6d4",
+    "#f97316",
 ];
 
-const colorizeData = (data) =>
-    data.map((item, index) => ({
-        ...item,
-        fill: COLORS[index % COLORS.length],
-    }));
-
-// ── Custom tooltip ──
-function CustomTooltip({ active, payload }) {
-    if (active && payload && payload.length) {
-        return (
-            <div className="bg-white border border-gray-100 rounded-xl shadow-lg px-4 py-3">
-                <p className="text-sm font-semibold text-gray-900">
-                    {payload[0].name}
-                </p>
-                <p className="text-sm text-gray-500 mt-0.5">
-                    {payload[0].value} device{payload[0].value !== 1 ? "s" : ""}
-                </p>
-            </div>
-        );
-    }
-    return null;
-}
-
-export default function DeviceTypeChart(data) {
+export default function DeviceTypeChart({ data }) {
     if (!data || data.length === 0) {
         return (
             <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
@@ -41,28 +30,69 @@ export default function DeviceTypeChart(data) {
             </div>
         );
     }
-    const coloredData = colorizeData(data);
+
+    const chartData = {
+        labels: data.map((d) => d.name),
+        datasets: [
+            {
+                label: "Devices",
+                data: data.map((d) => d.value),
+                backgroundColor: data.map((_, i) => COLORS[i % COLORS.length]),
+                borderRadius: 6,
+                // borderRadius rounds the top of each bar
+                // makes it look modern and clean
+                borderSkipped: false,
+                maxBarThickness: 50,
+            },
+        ],
+    };
+
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        // indexAxis 'y' makes it horizontal
+        // much better for reading device type names
+        plugins: {
+            legend: { display: false },
+            // legend hidden because bar colors already
+            // differentiate the types visually
+            tooltip: {
+                callbacks: {
+                    label: (context) => {
+                        const value = context.parsed.x;
+                        return ` ${value} device${value !== 1 ? "s" : ""}`;
+                    },
+                },
+            },
+        },
+        scales: {
+            x: {
+                grid: { color: "#f1f5f9" },
+                ticks: {
+                    color: "#94a3b8",
+                    font: { size: 12 },
+                    // Only show whole numbers
+                    stepSize: 1,
+                },
+                border: { display: false },
+            },
+            y: {
+                grid: { display: false },
+                ticks: {
+                    color: "#374151",
+                    font: { size: 12 },
+                },
+                border: { display: false },
+            },
+        },
+    };
+
     return (
-        <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-                <Pie
-                    data={coloredData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={110}
-                    paddingAngle={3}
-                    dataKey="value"
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend
-                    iconType="circle"
-                    iconSize={8}
-                    formatter={(value) => (
-                        <span className="text-xs text-gray-600">{value}</span>
-                    )}
-                />
-            </PieChart>
-        </ResponsiveContainer>
+        <div style={{ height: Math.max(data.length * 60, 200) }}>
+            {/* Dynamic height based on number of device types */}
+            {/* More types = taller chart, minimum 200px */}
+            <Bar data={chartData} options={options} />
+        </div>
     );
 }
