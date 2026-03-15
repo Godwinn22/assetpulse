@@ -590,7 +590,7 @@ export default function UsersPage() {
         return (
             s.full_name?.toLowerCase().includes(q) ||
             s.email?.toLowerCase().includes(q) ||
-            s.department?.toLowerCase().includes(q)
+            s.department?.name?.toLowerCase().includes(q)
         );
     });
 
