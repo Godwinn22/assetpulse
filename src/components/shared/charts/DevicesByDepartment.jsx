@@ -24,8 +24,26 @@ export default function DevicesByDepartment({ data }) {
             {
                 label: "Devices",
                 data: data.map((d) => d.value),
-                backgroundColor: "#6366f1",
-                hoverBackgroundColor: "#4f46e5",
+                // backgroundColor: "#6366f1",
+                // hoverBackgroundColor: "#4f46e5",
+                backgroundColor: [
+                    "#3b82f6", // blue
+                    "#8b5cf6", // purple
+                    "#10b981", // green
+                    "#f59e0b", // amber
+                    "#ef4444", // red
+                    "#06b6d4", // cyan
+                    "#f97316", // orange
+                ].slice(0, data.length),
+                hoverBackgroundColor: [
+                    "#2563eb",
+                    "#7c3aed",
+                    "#059669",
+                    "#d97706",
+                    "#dc2626",
+                    "#0891b2",
+                    "#ea580c",
+                ].slice(0, data.length),
                 borderRadius: 6,
                 borderSkipped: false,
                 maxBarThickness: 40,
