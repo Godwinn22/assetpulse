@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/useAuth";
+import DeviceTypeChart from "../../components/shared/charts/DeviceTypeChart";
+import DeviceStatusOverview from "../../components/shared/charts/DeviceStatusOverview";
 import {
     Cpu,
     Laptop,
@@ -29,6 +31,8 @@ function DeviceIcon({ type }) {
 export default function MyDevices() {
     const { profile } = useAuth();
     const [devices, setDevices] = useState([]);
+    const [typeChartData, setTypeChartData] = useState([]);
+    const [returnChartData, setReturnChartData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -45,6 +49,20 @@ export default function MyDevices() {
 
                 if (error) throw error;
                 setDevices(data || []);
+                // Transform devices into chart data
+                // Same reduce() pattern we used in Overview.jsx
+                if (data && data.length > 0) {
+                    const typeCounts = data.reduce((tally, device) => {
+                        tally[device.type] = (tally[device.type] || 0) + 1;
+                        return tally;
+                    }, {});
+
+                    const chartData = Object.entries(typeCounts)
+                        .map(([name, value]) => ({ name, value }))
+                        .sort((a, b) => b.value - a.value);
+
+                    setTypeChartData(chartData);
+                }
             } catch (err) {
                 console.error("Could not fetch devices:", err.message);
             } finally {
@@ -52,7 +70,34 @@ export default function MyDevices() {
             }
         };
 
+        const fetchReturnStats = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("assignment_history")
+                    .select("returned_at")
+                    .eq("assigned_to", profile.id);
+
+                if (error) throw error;
+
+                // Count active vs returned
+                const active = data.filter(
+                    (h) => h.returned_at === null,
+                ).length;
+                const returned = data.filter(
+                    (h) => h.returned_at !== null,
+                ).length;
+
+                setReturnChartData([
+                    { name: "Active", value: active },
+                    { name: "Returned", value: returned },
+                ]);
+            } catch (err) {
+                console.error("Could not fetch return stats:", err.message);
+            }
+        };
+
         fetchDevices();
+        fetchReturnStats();
     }, [profile]);
 
     // Format Currency
@@ -114,6 +159,32 @@ export default function MyDevices() {
                     </p>
                 </div>
             </div>
+
+            {/* ── My Devices by Type chart ── */}
+            {typeChartData.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
+                    <h2 className="font-semibold text-gray-900 mb-1">
+                        My Devices by Type
+                    </h2>
+                    <p className="text-gray-400 text-xs mb-4">
+                        Breakdown of your assigned devices
+                    </p>
+                    <DeviceTypeChart data={typeChartData} />
+                </div>
+            )}
+
+            {/* ── Active vs Returned chart ── */}
+            {returnChartData.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
+                    <h2 className="font-semibold text-gray-900 mb-1">
+                        Active vs Returned
+                    </h2>
+                    <p className="text-gray-400 text-xs mb-4">
+                        Your device assignment history overview
+                    </p>
+                    <DeviceStatusOverview data={returnChartData} />
+                </div>
+            )}
 
             {/* ── Devices table ── */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
