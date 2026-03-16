@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import DeviceTypeChart from "../../components/shared/charts/DeviceTypeChart";
 import DevicesByDepartment from "../../components/shared/charts/DevicesByDepartment";
+import AssignmentTrend from "../../components/shared/charts/AssignmentTrend";
 import DeviceStatusOverview from "../../components/shared/charts/DeviceStatusOverview";
 import {
     Cpu,
@@ -52,6 +53,7 @@ export default function Overview() {
     const [recentAssignments, setRecentAssignments] = useState([]);
     const [deviceTypeData, setDeviceTypeData] = useState([]);
     const [deptChartData, setDeptChartData] = useState([]);
+    const [trendData, setTrendData] = useState([]);
     const [deviceStatusOverviewData, setDeviceStatusOverviewData] = useState(
         [],
     );
@@ -100,6 +102,58 @@ export default function Overview() {
 
                 setDeptChartData(deptData);
             }
+
+            // ── Fetch assignment trend (last 6 months) ──
+
+            // Step 1: Generate last 6 months as labels
+            // We do this in JavaScript so months with
+            // zero assignments still appear on the chart
+            const getLast6Months = () => {
+                const months = [];
+                for (let i = 5; i >= 0; i--) {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() - i);
+                    months.push({
+                        // Short month name e.g. "Jan", "Feb"
+                        label: date.toLocaleDateString("en-GB", {
+                            month: "short",
+                            year: "2-digit",
+                        }),
+                        // Full year-month for matching e.g. "2026-01"
+                        key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+                    });
+                }
+                return months;
+            };
+
+            // Step 2: Fetch assignment counts from DB
+            // We use a date filter to only get last 6 months
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+            const { data: trendRaw, error: trendErr } = await supabase
+                .from("assignment_history")
+                .select("assigned_at")
+                .gte("assigned_at", sixMonthsAgo.toISOString());
+
+            if (trendErr) throw trendErr;
+
+            // Step 3: Count assignments per month from DB results
+            const trendCounts = (trendRaw || []).reduce((tally, row) => {
+                // Extract year-month key e.g. "2026-03"
+                const key = row.assigned_at.slice(0, 7);
+                tally[key] = (tally[key] || 0) + 1;
+                return tally;
+            }, {});
+
+            // Step 4: Merge with our 6 month labels
+            // Months with no assignments get count: 0
+            const trend = getLast6Months().map((month) => ({
+                month: month.label,
+                count: trendCounts[month.key] || 0,
+            }));
+
+            setTrendData(trend);
 
             // Fetch the 6 most recent assignment history entries
             const { data: recent, error: histErr } = await supabase
@@ -287,6 +341,7 @@ export default function Overview() {
                 <DeviceStatusOverview data={deviceStatusOverviewData} />
             </div>
 
+            {/* ── Devices by Department ── */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
                 <h2 className="font-semibold text-gray-900 mb-1">
                     Devices by Department
@@ -295,6 +350,17 @@ export default function Overview() {
                     Number of active devices per department
                 </p>
                 <DevicesByDepartment data={deptChartData} />
+            </div>
+
+            {/* ── Device Assignments from last 6 months ── */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                <h2 className="font-semibold text-gray-900 mb-1">
+                    Assignment Trend
+                </h2>
+                <p className="text-gray-400 text-xs mb-6">
+                    Device assignments over the last 6 months
+                </p>
+                <AssignmentTrend data={trendData} />
             </div>
 
             {/* ── Recent Assignments table ── */}
