@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 import DeviceTypeChart from "../../components/shared/charts/DeviceTypeChart";
 import DevicesByDepartment from "../../components/shared/charts/DevicesByDepartment";
 import AssignmentTrend from "../../components/shared/charts/AssignmentTrend";
+import ValueByDepartment from "../../components/shared/charts/ValueByDepartment";
 import DeviceStatusOverview from "../../components/shared/charts/DeviceStatusOverview";
 import {
     Cpu,
@@ -24,7 +25,7 @@ function StatCard({ label, value, icon, bgColor, iconColor, sub }) {
             <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                     <p className="text-gray-500 text-sm font-medium">{label}</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1 truncate">
+                    <p className="text-2xl font-bold text-gray-900 mt-1 truncate">
                         {value}
                     </p>
                     {sub && (
@@ -54,6 +55,7 @@ export default function Overview() {
     const [deviceTypeData, setDeviceTypeData] = useState([]);
     const [deptChartData, setDeptChartData] = useState([]);
     const [trendData, setTrendData] = useState([]);
+    const [valueDeptData, setValueDeptData] = useState([]);
     const [deviceStatusOverviewData, setDeviceStatusOverviewData] = useState(
         [],
     );
@@ -76,7 +78,7 @@ export default function Overview() {
                 .from("devices")
                 .select(
                     `
-    id,
+    id, purchase_price,
     assignee:profiles!devices_assigned_to_fkey(
       department:departments(name)
     )
@@ -101,6 +103,26 @@ export default function Overview() {
                     .sort((a, b) => b.value - a.value);
 
                 setDeptChartData(deptData);
+            }
+
+            // ── Value by department ──
+            // Same query as DevicesByDepartment
+            // but we sum purchase_price instead of counting
+            if (deptDevices) {
+                const valueCounts = deptDevices.reduce((tally, device) => {
+                    const dept = device.assignee?.department?.name;
+                    if (!dept) return tally;
+                    tally[dept] =
+                        (tally[dept] || 0) +
+                        (Number(device.purchase_price) || 0);
+                    return tally;
+                }, {});
+
+                const valueData = Object.entries(valueCounts)
+                    .map(([name, value]) => ({ name, value }))
+                    .sort((a, b) => b.value - a.value);
+
+                setValueDeptData(valueData);
             }
 
             // ── Fetch assignment trend (last 6 months) ──
@@ -361,6 +383,17 @@ export default function Overview() {
                     Device assignments over the last 6 months
                 </p>
                 <AssignmentTrend data={trendData} />
+            </div>
+
+            {/* ── Value by Department ── */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                <h2 className="font-semibold text-gray-900 mb-1">
+                    Device Value by Department
+                </h2>
+                <p className="text-gray-400 text-xs mb-6">
+                    Total value of assigned devices per department
+                </p>
+                <ValueByDepartment data={valueDeptData} />
             </div>
 
             {/* ── Recent Assignments table ── */}
