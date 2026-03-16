@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import DeviceTypeChart from "../../components/shared/charts/DeviceTypeChart";
+import DeviceStatusOverview from "../../components/shared/charts/DeviceStatusOverview";
 import {
     Cpu,
     CheckCircle2,
@@ -49,6 +50,9 @@ export default function Overview() {
     });
     const [recentAssignments, setRecentAssignments] = useState([]);
     const [deviceTypeData, setDeviceTypeData] = useState([]);
+    const [deviceStatusOverviewData, setDeviceStatusOverviewData] = useState(
+        [],
+    );
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -116,6 +120,29 @@ export default function Overview() {
                 );
 
                 setDeviceTypeData(chartData);
+                setDeviceStatusOverviewData([
+                    {
+                        name: "Assigned",
+                        value: devices.filter((d) => d.status === "assigned")
+                            .length,
+                    },
+                    {
+                        name: "Available",
+                        value: devices.filter((d) => d.status === "available")
+                            .length,
+                    },
+                    {
+                        name: "Under Repair",
+                        value: devices.filter(
+                            (d) => d.status === "under_repair",
+                        ).length,
+                    },
+                    {
+                        name: "Retired",
+                        value: devices.filter((d) => d.status === "retired")
+                            .length,
+                    },
+                ]);
             }
 
             setRecentAssignments(recent || []);
@@ -213,6 +240,16 @@ export default function Overview() {
                     Distribution of all devices in inventory
                 </p>
                 <DeviceTypeChart data={deviceTypeData} />
+            </div>
+            {/* ── Charts section for Device status overview ── */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                <h2 className="font-semibold text-gray-900 mb-1">
+                    Device Status Overview
+                </h2>
+                <p className="text-gray-400 text-xs mb-6">
+                    Full breakdown of all device statuses
+                </p>
+                <DeviceStatusOverview data={deviceStatusOverviewData} />
             </div>
 
             {/* ── Recent Assignments table ── */}
