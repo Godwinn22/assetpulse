@@ -117,7 +117,7 @@ export default function Overview() {
                         // Short month name e.g. "Jan", "Feb"
                         label: date.toLocaleDateString("en-GB", {
                             month: "short",
-                            year: "2-digit",
+                            year: "numeric",
                         }),
                         // Full year-month for matching e.g. "2026-01"
                         key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
