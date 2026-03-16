@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import DeviceTypeChart from "../../components/shared/charts/DeviceTypeChart";
+import DevicesByDepartment from "../../components/shared/charts/DevicesByDepartment";
 import DeviceStatusOverview from "../../components/shared/charts/DeviceStatusOverview";
 import {
     Cpu,
@@ -50,6 +51,7 @@ export default function Overview() {
     });
     const [recentAssignments, setRecentAssignments] = useState([]);
     const [deviceTypeData, setDeviceTypeData] = useState([]);
+    const [deptChartData, setDeptChartData] = useState([]);
     const [deviceStatusOverviewData, setDeviceStatusOverviewData] = useState(
         [],
     );
@@ -66,6 +68,38 @@ export default function Overview() {
                 .from("devices")
                 .select("*");
             if (devErr) throw devErr;
+
+            // Fetch assigned devices with department info
+            const { data: deptDevices, error: deptErr } = await supabase
+                .from("devices")
+                .select(
+                    `
+    id,
+    assignee:profiles!devices_assigned_to_fkey(
+      department:departments(name)
+    )
+  `,
+                )
+                .eq("status", "assigned");
+
+            if (deptErr) throw deptErr;
+
+            if (deptDevices) {
+                // Count devices per department
+                const deptCounts = deptDevices.reduce((tally, device) => {
+                    const dept = device.assignee?.department?.name;
+                    if (!dept) return tally;
+                    tally[dept] = (tally[dept] || 0) + 1;
+                    return tally;
+                }, {});
+
+                // Convert to chart shape, sorted highest first
+                const deptData = Object.entries(deptCounts)
+                    .map(([name, value]) => ({ name, value }))
+                    .sort((a, b) => b.value - a.value);
+
+                setDeptChartData(deptData);
+            }
 
             // Fetch the 6 most recent assignment history entries
             const { data: recent, error: histErr } = await supabase
@@ -241,6 +275,7 @@ export default function Overview() {
                 </p>
                 <DeviceTypeChart data={deviceTypeData} />
             </div>
+
             {/* ── Charts section for Device status overview ── */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
                 <h2 className="font-semibold text-gray-900 mb-1">
@@ -250,6 +285,16 @@ export default function Overview() {
                     Full breakdown of all device statuses
                 </p>
                 <DeviceStatusOverview data={deviceStatusOverviewData} />
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                <h2 className="font-semibold text-gray-900 mb-1">
+                    Devices by Department
+                </h2>
+                <p className="text-gray-400 text-xs mb-6">
+                    Number of active devices per department
+                </p>
+                <DevicesByDepartment data={deptChartData} />
             </div>
 
             {/* ── Recent Assignments table ── */}
