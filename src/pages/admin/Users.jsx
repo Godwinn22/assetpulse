@@ -554,9 +554,15 @@ export default function UsersPage() {
     const [staff, setStaff] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [activeDept, setActiveDept] = useState("All");
     const [showCreate, setShowCreate] = useState(false);
     const [editingStaff, setEditingStaff] = useState(null);
     const [deletingStaff, setDeletingStaff] = useState(null);
+
+    const departments = [
+        "All",
+        ...new Set(staff.map((s) => s.department?.name).filter(Boolean)),
+    ];
 
     useEffect(() => {
         fetchStaff();
@@ -587,11 +593,15 @@ export default function UsersPage() {
 
     const filtered = staff.filter((s) => {
         const q = search.toLowerCase();
-        return (
+
+        const matchesDept =
+            activeDept === "All" || s.department?.name === activeDept;
+        const matchesSearch =
             s.full_name?.toLowerCase().includes(q) ||
             s.email?.toLowerCase().includes(q) ||
-            s.department?.name?.toLowerCase().includes(q)
-        );
+            s.department?.name?.toLowerCase().includes(q);
+
+        return matchesDept && matchesSearch;
     });
 
     const onCreated = () => {
@@ -645,6 +655,39 @@ export default function UsersPage() {
                        bg-gray-50 focus:bg-white transition"
                     />
                 </div>
+            </div>
+
+            {/* ── Department filter tabs ── */}
+            <div className="flex flex-wrap gap-2 mb-5">
+                {departments.map((dept) => (
+                    <button
+                        key={dept}
+                        onClick={() => setActiveDept(dept)}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition
+        ${
+            activeDept === dept
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600"
+        }`}
+                    >
+                        {dept}
+                        {/* Show count next to each department */}
+                        <span
+                            className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full
+        ${
+            activeDept === dept
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-500"
+        }`}
+                        >
+                            {dept === "All"
+                                ? staff.length
+                                : staff.filter(
+                                      (s) => s.department?.name === dept,
+                                  ).length}
+                        </span>
+                    </button>
+                ))}
             </div>
 
             {/* ── Staff table ── */}
